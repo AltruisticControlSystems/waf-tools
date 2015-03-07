@@ -16,13 +16,14 @@ def package_reader(self):
         pass
     else:
         self.source = []
+        self.include = []
         packageFile = self.path.find_resource(self.manifest)
 
         doc = minidom.parse(packageFile.abspath())
 
         for manifest in doc.getElementsByTagName("manifest"):
+            self.include += [include.getAttribute("path").encode('ascii', 'ignore') for include in manifest.getElementsByTagName("include")]
             self.source += [source.getAttribute("path").encode('ascii', 'ignore') for source in manifest.getElementsByTagName("source")]
-            self.source += [include.getAttribute("path").encode('ascii', 'ignore') for include in manifest.getElementsByTagName("include")]
             self.source += [moc.getAttribute("path").encode('ascii', 'ignore') for moc in manifest.getElementsByTagName("moc")]
 
         self.source = self.to_nodes(self.source)
