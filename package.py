@@ -64,8 +64,8 @@ def package_reader(self):
     if not getattr(self,'manifest', None):
         pass
     else:
+        self.includes = []
         self.source = []
-        self.include = []
         self.moc_list = []
         self.env.DBUS_INCLUDES = []
         packageFile = self.path.find_resource(self.manifest)
@@ -73,7 +73,9 @@ def package_reader(self):
         doc = minidom.parse(packageFile.abspath())
 
         for manifest in doc.getElementsByTagName("manifest"):
-            self.include += [str(include.getAttribute("path")) for include in manifest.getElementsByTagName("include")]
+            self.includes += self.to_incnodes(
+                [str(include.getAttribute("path")) for include in manifest.getElementsByTagName("include")],
+                )
             self.source += [str(source.getAttribute("path")) for source in manifest.getElementsByTagName("source")]
             self.env.DBUS_INCLUDES += [str(source.getAttribute("path")) for source in manifest.getElementsByTagName("dbusInclude")]
 
@@ -85,7 +87,7 @@ def package_reader(self):
                 self,
                 [str(introspect.getAttribute("path")) for introspect in manifest.getElementsByTagName("introspect")]
                 )
-            process_introspect(
+            process_business_logic(
                 self,
                 [str(bL.getAttribute("class")) for bL in manifest.getElementsByTagName("businessLogic")]
                 )
