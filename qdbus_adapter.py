@@ -20,18 +20,15 @@ class qdbus_adapter(Task.Task):
             return Task.Task.runnable_status(self)
 
     def build_adapter(self):
-        files = []
-        for output in self.outputs:
-            files += [self.cwd.find_or_declare(output)]
-        cmd = [self.env.QDBUSXML2CPP]
+        cmd = [self.env.QDBUSXML2CPP[0]]
         for header in self.env.DBUS_INCLUDES:
             cmd += ['-i',header]
-        cmd = ['-l',
+        cmd += ['-l',
             self.env.BUSINESS_LOGIC,
             '-a',
-            '%s:%s' % (files[0].path_from(self.cwd),files[1].path_from(self.cwd)),
-            self.inputs[0].path_from(self.cwd),
-            self.env.INTERFACE_NAME]
+            '%s:%s' % (self.outputs[0].path_from(self.cwd),
+                self.outputs[1].path_from(self.cwd)),
+            self.inputs[0].path_from(self.cwd)]
         self.exec_command(cmd, cwd=self.cwd.abspath())
 
 @feature('qdbus_adapter')
@@ -40,8 +37,7 @@ class qdbus_adapter(Task.Task):
 def process_qdbus_adapter(self):
     outputs = []
 
-    base_output_path = self.path.get_bld().make_node(['%d'%self.idx])
-    output_path = base_output_path.make_node(self.env.INTERFACE_NAME)
+    output_path = self.path.get_bld().make_node(['DBus'])
 
     h_file= '%s.h'%self.env.INTERFACE_NAME
     source_file = '%s.cpp'%self.env.INTERFACE_NAME
@@ -49,9 +45,15 @@ def process_qdbus_adapter(self):
     h_node = output_path.find_or_declare(h_file)
     source_node = output_path.find_or_declare(source_file)
 
+    moc_node = output_path.find_or_declare(
+        h_file.replace('.','_') + '_%d_moc.cpp'%self.idx
+        )
+
+    self.create_task('moc',h_node,moc_node)
+
     outputs += [h_node,source_node]
 
-    self.create_task(
+    task = self.create_task(
         'qdbus_adapter',
         self.env.INTROSPECT_FILE,
         outputs
@@ -68,7 +70,3 @@ def process_qdbus_adapter(self):
     self.source = self.to_list(getattr(self,'source',[]))
     self.source.append(source_node)
     self.source.append(moc_node)
-
-def configure(conf):
-    conf.find_program('qdbusxml2cpp',var='QDBUSXML2CPP')
-

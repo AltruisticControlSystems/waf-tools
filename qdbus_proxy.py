@@ -20,7 +20,7 @@ class qdbus_proxy(Task.Task):
             return Task.Task.runnable_status(self)
 
     def build_proxy(self):
-        cmd = self.env.QDBUSXML2CPP
+        cmd = [self.env.QDBUSXML2CPP[0]]
         for header in self.env.DBUS_INCLUDES:
             cmd += ['-i',header]
         cmd += ['-p',
@@ -36,11 +36,10 @@ class qdbus_proxy(Task.Task):
 def process_qdbus_proxy(self):
     outputs = []
 
-    base_output_path = self.path.get_bld().make_node(['%d'%self.idx])
-    output_path = base_output_path.make_node(self.env.INTERFACE_NAME)
+    output_path = self.path.get_bld().make_node(['DBus'])
 
-    h_file= '%s.h'%self.env.INTERFACE_NAME
-    source_file = '%s.cpp'%self.env.INTERFACE_NAME
+    h_file= '%s_proxy.h'%self.env.INTERFACE_NAME
+    source_file = '%s_proxy.cpp'%self.env.INTERFACE_NAME
 
     h_node = output_path.find_or_declare(h_file)
     source_node = output_path.find_or_declare(source_file)
@@ -63,14 +62,13 @@ def process_qdbus_proxy(self):
 
     self.includes = self.to_incnodes(getattr(self,'includes',[]))
     self.includes.append(h_node.parent)
+    self.includes.append(output_path)
 
     self.export_includes = self.to_incnodes(getattr(self,'export_includes',[]))
     self.export_includes.append(h_node.parent)
+    self.export_includes.append(output_path)
+    print self.export_includes
 
     self.source = self.to_list(getattr(self,'source',[]))
     self.source.append(source_node)
     self.source.append(moc_node)
-
-def configure(conf):
-    conf.find_program('qdbusxml2cpp',var='QDBUSXML2CPP')
-
